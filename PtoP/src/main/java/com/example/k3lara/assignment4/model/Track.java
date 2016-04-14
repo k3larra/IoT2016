@@ -40,7 +40,8 @@ public class Track {
     public void loadTrack(){
         track.clear();
         trackState = TRACKSTATE.NOT_STARTED;
-        setTestTrackNiagara();
+        //setTestTrackNiagara();
+        setTestTrackLinero();
     }
 
     public List<Point> getTrack(){

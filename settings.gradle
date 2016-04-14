@@ -1,1 +1,1 @@
-include ':app', ':PtoP'
+include ':app', ':PtoP', ':SreamingAudioPlayer', ':audiotest'

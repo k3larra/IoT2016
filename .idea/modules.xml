@@ -4,7 +4,9 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/IoT2016.iml" filepath="$PROJECT_DIR$/IoT2016.iml" />
       <module fileurl="file://$PROJECT_DIR$/PtoP/PtoP.iml" filepath="$PROJECT_DIR$/PtoP/PtoP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SreamingAudioPlayer/SreamingAudioPlayer.iml" filepath="$PROJECT_DIR$/SreamingAudioPlayer/SreamingAudioPlayer.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/audiotest/audiotest.iml" filepath="$PROJECT_DIR$/audiotest/audiotest.iml" />
     </modules>
   </component>
 </project>

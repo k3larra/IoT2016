@@ -95,4 +95,7 @@ public class Point implements Comparable<Point>{
     public int getSound() {
         return sound;
     }
+    public int playSequence() {
+        return sound;
+    }
 }
