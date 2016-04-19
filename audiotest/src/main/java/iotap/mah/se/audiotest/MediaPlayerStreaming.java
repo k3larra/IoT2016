@@ -1,14 +1,12 @@
 package iotap.mah.se.audiotest;
 
-import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -19,22 +17,20 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     private String streamingFile;
     private MediaPlayer mp;
     private MainActivity mainActivity;
-
-
-
+    private Timer t, turnTester;
     private boolean prepared;
     private int millisEnd =0;
+    private double degrees = 0.0;
 
+    //For stopping the sequence
     Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-            //mainActivity.setInfo("Stopping at:"+ mp.getCurrentPosition() + " should stop at: " + millisEnd);
             if (mp.isPlaying()){
                 mp.pause();
             }
         }
     };
-
     private class Sleeper extends TimerTask {
 
         @Override
@@ -42,6 +38,104 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
             handler.sendEmptyMessage(0);
         }
     }
+
+   //For Handling turns
+    Handler turnHandler = new Handler(){
+        private double left = 0.0f;
+        private double right = 1.0f;
+
+        double radians = Math.toRadians(degrees);
+        @Override
+        public void handleMessage(Message msg) {
+            //mainActivity.setInfo("Stopping at:"+ mp.getCurrentPosition() + " should stop at: " + millisEnd);
+            radians = Math.toRadians(degrees);
+            left = Math.abs(Math.sin(radians));
+            right = Math.abs(Math.cos(radians));
+            mp.setVolume((float) left, (float) right);
+            if (degrees >= 360) {
+                degrees = 0;
+            }
+            Log.i("MediaPlayerStreaming", "Degrees: " + degrees);
+            degrees = degrees + 0.2;
+            //0 = Left, 1 = right, 2 =left sharp, 3 = rightSharp 4 = slalom
+            if (msg.what==0) {  //left that is from 135 degrees to 225
+                Log.i("MediaPlayerStreaming","Message: left");
+                if (degrees > 135){
+                    turnTester.cancel();
+                }
+                degrees = degrees + 0.2;
+            }
+
+            if (msg.what==1) { //right
+                Log.i("MediaPlayerStreaming","Message: right");
+                if (degrees > 225){
+                    turnTester.cancel();
+                }
+            }
+
+            if (msg.what==2) { //Left sharp
+                Log.i("MediaPlayerStreaming","Message: left sharp");
+                if (degrees > 135){
+                    turnTester.cancel();
+                }
+                degrees = degrees + 0.2;
+            }
+            if (msg.what==3) {  //right sharp
+                Log.i("MediaPlayerStreaming","Message: right sharp");
+                if (degrees > 225){
+                    turnTester.cancel();
+                }
+                degrees = degrees + 0.4;
+            }
+
+            if (msg.what==4) {
+                Log.i("MediaPlayerStreaming","Message: slalom");
+            }
+        }
+    };
+    private class TurnTimer extends TimerTask {
+        private int type = 0;  //0 = Left, 1 = right, 2 =left sharp, 3 = rightSharp 4 = slalom
+        public TurnTimer(int type) {
+            this.type = type;
+        }
+
+        @Override
+        public void run() {
+            turnHandler.sendEmptyMessage(type);
+
+        }
+    }
+
+
+    public void slalom() {
+        degrees =45;
+        turnTester = new Timer();
+        turnTester.schedule(new TurnTimer(4),0,40);
+    }
+
+    //Pause 5 sec then make a turn in 5 sec
+    public void turnRight() {
+        degrees =135;
+        turnTester = new Timer();
+        turnTester.schedule(new TurnTimer(1),5000,40);
+
+    }
+
+    public void turnLeft() {
+        degrees =45;
+        turnTester = new Timer();
+        turnTester.schedule(new TurnTimer(0),5000,40);
+    }
+
+    public void turnLeftSharp() {
+        degrees =45;
+        turnTester = new Timer();
+        turnTester.schedule(new TurnTimer(2),2000,40);
+    }
+
+
+
+
 
     private int mediaFileLengthInMilliseconds;
     public MediaPlayerStreaming(String streamingFile, MainActivity c) {
@@ -73,6 +167,10 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
 
     public void playFrom(int millisStart){
         this.millisEnd = 0;
+        try{
+            t.cancel();
+            turnTester.cancel();
+        }catch(Exception e){}
         if(mp.isPlaying()) {
             mp.pause();
         }
@@ -82,6 +180,10 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     }
 
     public void playFromTo(int millisStart, int millisEnd){
+        try{
+            t.cancel();
+            turnTester.cancel();
+        }catch(Exception e){}
         this.millisEnd = millisEnd;
         if(mp.isPlaying()) {
             mp.pause();
@@ -92,6 +194,10 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     }
 
     public void pause(){
+        try{
+            t.cancel();
+            turnTester.cancel();
+        }catch(Exception e){}
         if (prepared) {
             if(mp.isPlaying()) {
                 mp.pause();
@@ -119,12 +225,13 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     }
 
     /**Note that the passed volume values are raw scalars in range 0.0 to 1.0. UI controls should be scaled logarithmically*/
-    void setVolume(int leftVolume, int rightVolume){
-        int maxVolume = 100;
-        float left=(float)(Math.log(maxVolume-leftVolume)/Math.log(maxVolume));
-        float right=(float)(Math.log(maxVolume-rightVolume)/Math.log(maxVolume));
+    void setVolume(float leftVolume, float rightVolume){
+        //int maxVolume = 100;
+        //float left=(float)(Math.log(maxVolume-leftVolume)/Math.log(maxVolume));
+        //float right=(float)(Math.log(maxVolume-rightVolume)/Math.log(maxVolume));
         if (prepared) {
-            mp.setVolume(1-left, 1-right);
+            mp.setVolume(leftVolume, rightVolume);
+            Log.i("MediaPlayerStreaming","Left: "+leftVolume+" Right: "+rightVolume);
         }
     }
     @Override
@@ -135,9 +242,12 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     @Override
     public void onSeekComplete(MediaPlayer mp) {
             mp.start();
+
             int i = this.millisEnd - mp.getCurrentPosition();
+            Log.i("MediaPlayerStreaming","Length: "+i+" current "+ mp.getCurrentPosition()+" End "+this.millisEnd);
             if (i>0) {
-                new Timer().schedule(new Sleeper(), this.millisEnd - mp.getCurrentPosition());
+                t = new Timer();
+                t.schedule(new Sleeper(), this.millisEnd - mp.getCurrentPosition());
             }
     }
 
