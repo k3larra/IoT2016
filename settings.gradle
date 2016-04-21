@@ -1,1 +1,1 @@
-include ':app', ':PtoP', ':SreamingAudioPlayer', ':audiotest'
+include ':app', ':PtoP', ':SreamingAudioPlayer', ':audiotest', ':audio-3dlib', ':audio3dtest', ':walkandrecordprototype'

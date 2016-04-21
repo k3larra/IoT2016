@@ -25,7 +25,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Low Volume"
+                android:text="Low volume"
                 android:id="@+id/textView3"
                 android:layout_weight="1" />
 
@@ -92,7 +92,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Left Ear"
+                android:text="Left ear"
                 android:id="@+id/textView5"
                 android:layout_weight="1" />
 
@@ -115,7 +115,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Turn Right"
+                android:text="Turn right"
                 android:id="@+id/textView6"
                 android:layout_weight="1" />
 
@@ -138,7 +138,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Turn Left"
+                android:text="Turn left"
                 android:id="@+id/textView7"
                 android:layout_weight="1" />
 
@@ -159,7 +159,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="Turn Left sharp"
+                android:text="Turn left sharp"
                 android:id="@+id/textView"
                 android:layout_weight="1" />
 

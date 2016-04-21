@@ -3,4 +3,5 @@
     <string name="Palme">http://sverigesradio.se/topsy/ljudfil/5626744-mp3</string>
     <string name="Xanadu">http://sverigesradio.se/topsy/ljudfil/5667757-mp3</string>
     <string name="tobakshandlaren">https://sverigesradio.se/topsy/ljudfil/5655606-mp3</string>
+    <string name="action_settings">Settings</string>
 </resources>

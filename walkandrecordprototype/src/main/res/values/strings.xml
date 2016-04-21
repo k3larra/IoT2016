@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">WalkAndRecordPrototype</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="action_settings">Settings</string>
+    <string name="startstop">Start or stop recording</string>
+    <string name="start">Start</string>
+    <string name="cancel">Cancel</string>
+    <string name="stop">Stop</string>
+    <string name="replay">Replay</string>
+</resources>

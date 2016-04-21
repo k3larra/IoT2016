@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 break;
             case R.id.toggleButton4:  //Left Ear
                 if (isChecked) {
-                    mediaPlayerStreaming.setVolume(0.1f,0.0f);
+                    mediaPlayerStreaming.setVolume(1.0f,0.0f);
                     mediaPlayerStreaming.playFromTo(40*1000, 50*1000);
                     setInfo("Left Ear");
                 } else {
