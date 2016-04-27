@@ -41,11 +41,12 @@ public class Recorder{
 
     public Recorder(String fileName) {
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath();
-        mFileName += "/fileName.3gp";
+        mFileName += "/"+fileName+".3gp";
     }
 
         public void startPlaying() {
             mPlayer = new MediaPlayer();
+            Log.e(LOG_TAG, " mFileName");
             try {
                 mPlayer.setDataSource(mFileName);
                 mPlayer.prepare();
@@ -55,7 +56,7 @@ public class Recorder{
             }
         }
 
-        private void stopPlaying() {
+        public void stopPlaying() {
             mPlayer.release();
             mPlayer = null;
         }

@@ -1,10 +1,15 @@
 package iotap.mah.se.walkandrecordprototype;
 
+import android.provider.SyncStateContract;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.graphics.Color;
 import android.location.Location;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
@@ -19,7 +24,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -27,7 +34,6 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Random;
 
 import iotap.mah.se.walkandrecordprototype.audio.Recorder;
@@ -39,61 +45,42 @@ public class MapsActivity extends FragmentActivity implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener,
-        StartStopDialog.OnSelectionListener {
+        StartStop.OnSelectionListener{
 
+    //Maps parameters
     private GoogleMap mMap;
-    Firebase myFirebaseRef;
-    Firebase soundTrackRef;
-    private final static String SOUNDTRACKREF = "soundTrackRef";
-    private ArrayList<Point> points = new ArrayList<Point>();
-    //Firebase locRef;
-    protected static final String TAG = "MapsActivity";
     public static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
+    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    protected GoogleApiClient mGoogleApiClient;
+    protected LocationRequest mLocationRequest;
+    protected Location mCurrentLocation;
+    protected Boolean mRequestingLocationUpdates = false;
+
+    //Firebase stuff
+    public static Firebase myFirebaseRef; //ref for all SoundTracks
+    public static Firebase soundTrackRef; //Ref for current track
+    private final static String SOUNDTRACKREF = "soundTrackRef";
+    private final static int MAP_ZOOM = 18;
+
+    //Implementation stuff
+    protected static final String TAG = "MapsActivity";
+    private ArrayList<Point> points = new ArrayList<Point>();
     public long millisInToRecording;
     Random r = new Random();
-
-    /**
-     * The fastest rate for active location updates. Exact. Updates will never be more frequent
-     * than this value.
-     */
-    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
-            UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    protected String mLastUpdateTime;
+    private boolean recordWalkInitiated = false;
+    private Recorder recorder;
+    private boolean isRecording = false;
+    public boolean walkingMode = true;  //If false recordingmode
+    public boolean startedProgram = false;
 
     // Keys for storing activity state in the Bundle.
     protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
     protected final static String LOCATION_KEY = "location-key";
     protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
-    /**
-     * Provides the entry point to Google Play services.
-     */
-    protected GoogleApiClient mGoogleApiClient;
-
-    /**
-     * Stores parameters for requests to the FusedLocationProviderApi.
-     */
-    protected LocationRequest mLocationRequest;
-
-    /**
-     * Represents a geographical location.
-     */
-    protected Location mCurrentLocation;
-
-    /**
-     * Tracks the status of the location updates request. Value changes when the user presses the
-     * Start Updates and Stop Updates buttons.
-     */
-    protected Boolean mRequestingLocationUpdates = false;
-
-    /**
-     * Time when the location was updated represented as a String.
-     */
-    protected String mLastUpdateTime;
-    private boolean walkInitiated = false;
     private final static String WALK_INITIATED = "walkinitiated";
-    private Recorder recorder;
-    private boolean isRecording = false;
-    private boolean walkingMode = true;  //If false recordingmode
 
+    //Activity stuff
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,15 +88,17 @@ public class MapsActivity extends FragmentActivity implements
         myFirebaseRef = new Firebase("https://soundtrackmalmo.firebaseio.com//");
         if (savedInstanceState != null) {
             // Restore value of members from saved state
-            walkInitiated = savedInstanceState.getBoolean(WALK_INITIATED);
+            recordWalkInitiated = savedInstanceState.getBoolean(WALK_INITIATED);
             soundTrackRef = myFirebaseRef.child(savedInstanceState.getString(SOUNDTRACKREF));
         } else {
             // Probably initialize members with default values for a new instance
         }
 
-        if (!walkInitiated&&!walkingMode) {
-            createWalk("Around Universtitestholmen", "Lars the H");
-        }
+        /*
+        if (!recordWalkInitiated &&!walkingMode) {
+            createNewWalk("Around Universtitestholmen", "Lars the H");
+        }*/
+
 
 
         //locRef = myFirebaseRef.child("demowalk");
@@ -126,40 +115,13 @@ public class MapsActivity extends FragmentActivity implements
         // Kick off the process of building a GoogleApiClient and requesting the LocationServices
         // API.
         buildGoogleApiClient();
-    }
-
-    private void drawWalk() {
-        soundTrackRef = myFirebaseRef.child("-KFsyDa2mILtqdaoR-MN");
-        soundTrackRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                points.clear();
-                Log.i(TAG,dataSnapshot.child("author").getValue().toString());
-                Log.i(TAG,"Antal"+dataSnapshot.child("SoundTrack").getChildrenCount());
-                for (DataSnapshot postSnapshot: dataSnapshot.child("SoundTrack").getChildren()) {
-                    Point point = postSnapshot.getValue(Point.class);
-                    points.add(point);
-                }
-                for (int i = 1,j = 0; i<points.size();i++,j++) {
-
-                    Polyline line = mMap.addPolyline(new PolylineOptions()
-                            .add(new LatLng(points.get(j).getLatitude(),points.get(j).getLongitude()),
-                                    new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
-                            .width(5)
-                            .color(Color.RED));
-                }
-            }
-
-            @Override
-            public void onCancelled(FirebaseError firebaseError) {
-
-            }
-        });
+        showStartDialog();
+        //new StartStop().show(getSupportFragmentManager(),"hepp");
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean(WALK_INITIATED,walkInitiated);
+        savedInstanceState.putBoolean(WALK_INITIATED, recordWalkInitiated);
         savedInstanceState.putString(SOUNDTRACKREF,soundTrackRef.getKey());
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -192,6 +154,8 @@ public class MapsActivity extends FragmentActivity implements
             recorder.stopRecording();
         }
     }
+
+   //Maps stuff
     /**
      * Builds a GoogleApiClient. Uses the {@code #addApi} method to request the
      * LocationServices API.
@@ -205,34 +169,7 @@ public class MapsActivity extends FragmentActivity implements
                 .build();
         createLocationRequest();
     }
-    /**
-     * Sets up the location request. Android has two location request settings:
-     * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
-     * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
-     * the AndroidManifest.xml.
-     * <p/>
-     * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
-     * interval (5 seconds), the Fused Location Provider API returns location updates that are
-     * accurate to within a few feet.
-     * <p/>
-     * These settings are appropriate for mapping applications that show real-time location
-     * updates.
-     */
-    protected void createLocationRequest() {
-        mLocationRequest = new LocationRequest();
 
-        // Sets the desired interval for active location updates. This interval is
-        // inexact. You may not receive updates at all if no location sources are available, or
-        // you may receive them slower than requested. You may also receive updates faster than
-        // requested if other applications are requesting location at a faster interval.
-        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-
-        // Sets the fastest rate for active location updates. This interval is exact, and your
-        // application will never receive updates faster than this value.
-        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
-
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-    }
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -245,23 +182,22 @@ public class MapsActivity extends FragmentActivity implements
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        // Add a marker in Sydney and move the camera
-        LatLng annalindh = new LatLng(55.609047, 12.996346);
-        mMap.addMarker(new MarkerOptions().position(annalindh).title("Anna Lindhs plats"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(annalindh,0));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(annalindh));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(annalindh,18));
-        //allow myLocation
         mMap.setMyLocationEnabled(true);
+        mRequestingLocationUpdates =true;
+
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(LatLng latLng) {
-                new StartStopDialog().show(getSupportFragmentManager(),"hepp");
+                if (startedProgram) {
+                    new StartStop().show(getSupportFragmentManager(), "hepp");
+                }else{
+                    showStartDialog();
+                }
             }
         });
-        if (walkingMode){
-            drawWalk();
-        }
+        /*if (walkingMode){
+            drawSelectedWalk();
+        }*/
 
 
     }
@@ -280,38 +216,73 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        mCurrentLocation = location;
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
-        //updateUI();
-        //Toast.makeText(this, getResources().getString(R.string.location_updated_message),
-        //        Toast.LENGTH_SHORT).show();
-        Log.i(TAG,"At: lat: "+mCurrentLocation.getLatitude()+ " long "+mCurrentLocation.getLongitude());
-        int time = (int)( System.currentTimeMillis()-millisInToRecording);
-        //mCurrentLocation.getTime();   //Bättre
-        //mCurrentLocation.getAccuracy(); //I meter 68% säkerhet att man är där 0.0 om man inte vet
-        //mCurrentLocation.getSpeed();
-        Point point = new Point(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude(),time);
-        //Map<String, Double> post1 = new HashMap<String, Double>();
-
-        //post1.put("millis",r.nextDouble() );
-        //post1.put("lat", mCurrentLocation.getLatitude());
-        //post1.put("long", mCurrentLocation.getLongitude());
-        soundTrackRef.child("SoundTrack").push().setValue(point);
-    }
-
-    @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + connectionResult.getErrorCode());
+    }
+
+        //Location update stuff
+    /**
+         * Sets up the location request. Android has two location request settings:
+         * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
+         * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
+         * the AndroidManifest.xml.
+         * <p/>
+         * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
+         * interval (5 seconds), the Fused Location Provider API returns location updates that are
+         * accurate to within a few feet.
+         * <p/>
+         * These settings are appropriate for mapping applications that show real-time location
+         * updates.
+         */
+    protected void createLocationRequest() {
+            mLocationRequest = new LocationRequest();
+
+            // Sets the desired interval for active location updates. This interval is
+            // inexact. You may not receive updates at all if no location sources are available, or
+            // you may receive them slower than requested. You may also receive updates faster than
+            // requested if other applications are requesting location at a faster interval.
+            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+
+            // Sets the fastest rate for active location updates. This interval is exact, and your
+            // application will never receive updates faster than this value.
+            mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        }
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+        LatLng current = new LatLng(location.getLatitude(), location.getLongitude());
+        //mark location:
+        //
+        if(isRecording) {
+
+            MarkerOptions marker = new MarkerOptions()
+                    .position(current)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.here_marker))
+                    .title("current");
+            mMap.addMarker(marker);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, MAP_ZOOM));
+            //
+            mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+            Log.i(TAG, "At: lat: " + mCurrentLocation.getLatitude() + " long " + mCurrentLocation.getLongitude());
+            Log.i(TAG, "At: time: " + mCurrentLocation.getTime() + " \n\tAccuracy: " + mCurrentLocation.getAccuracy()+" \n\tSpeed: " + mCurrentLocation.getSpeed());
+            int time = (int) (System.currentTimeMillis() - millisInToRecording);
+            //mCurrentLocation.getTime();   //Bättre
+            //mCurrentLocation.getAccuracy(); //I meter 68% säkerhet att man är där 0.0 om man inte vet
+            //mCurrentLocation.getSpeed();
+            Point point = new Point(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude(), time, mCurrentLocation.getAccuracy(),mCurrentLocation.getSpeed());
+            soundTrackRef.child("SoundTrack").push().setValue(point);
+        }else{
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, MAP_ZOOM));
+        }
+
     }
 
     protected void startLocationUpdates() {
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
     }
 
-    /**
-     * Removes location updates from the FusedLocationApi.
-     */
     protected void stopLocationUpdates() {
         // It is a good practice to remove location requests when the activity is in a paused or
         // stopped state. Doing so helps battery performance and is especially
@@ -322,19 +293,55 @@ public class MapsActivity extends FragmentActivity implements
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
     }
 
-    public void createWalk(String name, String author){
-        SoundTrack soundTrack = new SoundTrack(name, author,"sv");
+
+    //My Stuff
+    private void drawSelectedWalk() {
+            //soundTrackRef = myFirebaseRef.child("-KFsyDa2mILtqdaoR-MN");
+            soundTrackRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    points.clear();
+                    Log.i(TAG,dataSnapshot.child("author").getValue().toString());
+                    Log.i(TAG,"Antal"+dataSnapshot.child("SoundTrack").getChildrenCount());
+                    for (DataSnapshot postSnapshot: dataSnapshot.child("SoundTrack").getChildren()) {
+                        Point point = postSnapshot.getValue(Point.class);
+                        points.add(point);
+                    }
+
+                    for (int i = 1,j = 0; i<points.size();i++,j++) {
+                        Log.i(TAG,"point: "+points.get(j).getLatitude());
+                        Polyline line = mMap.addPolyline(new PolylineOptions()
+                                .add(new LatLng(points.get(j).getLatitude(),points.get(j).getLongitude()),
+                                        new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
+                                .width(5)
+                                .color(Color.GREEN));
+                    }
+                }
+
+                @Override
+                public void onCancelled(FirebaseError firebaseError) {
+
+                }
+            });
+        }
+
+    public void createNewWalk(String name, String author){
+        SoundTrack soundTrack = new SoundTrack(name, author);
         soundTrackRef = myFirebaseRef.push();
         soundTrackRef.setValue(soundTrack);
         recorder = new Recorder(soundTrackRef.getKey());
-        walkInitiated = true;
+        recordWalkInitiated = true;
     }
 
-    public void startWalk(){
+    public void startRecordingWalk(){
         //clear all old points
+        Toast.makeText(this,"Clear old values and restart",Toast.LENGTH_SHORT).show();
+        mMap.clear();
         if(!walkingMode) {
+            Log.i(TAG, "Doing");
             soundTrackRef.child("SoundTrack").removeValue();
-            if (walkInitiated) {
+            if (recordWalkInitiated) {
+                Log.i(TAG, "startlocation");
                 mRequestingLocationUpdates = true;
                 startLocationUpdates();
             }
@@ -346,38 +353,102 @@ public class MapsActivity extends FragmentActivity implements
         }
     }
 
-    public void stopWalk(){
+    public void stopRecordingWalk(){
+        Toast.makeText(this,"Saved walk",Toast.LENGTH_SHORT).show();
         if(!walkingMode) {
-            if (walkInitiated) {
-                mRequestingLocationUpdates = true;
+            if (recordWalkInitiated) {
+                mRequestingLocationUpdates = false;
                 stopLocationUpdates();
             }
             if (isRecording) {
                 recorder.stopRecording();
                 isRecording = false;
             }
+            recordWalkInitiated =false;
         }
+        startedProgram = false;
     }
 
+    //DialogFragment calls
     @Override
     public void OnSelectionListener(int i) {
-        Log.i(TAG, "Selected: "+i);
+
         switch (i){
-            case 0:Log.i(TAG, "Selected: Start");
-                    startWalk();
-                break;
-            case 1:Log.i(TAG, "Selected: Play");
-                if(!walkingMode) {
-                    if (!isRecording) {
-                        recorder.startPlaying();
-                    }
+            case 0:
+                Log.i(TAG, "Selected: Record");
+                /*if (!recordWalkInitiated &&!walkingMode) {
+                    Log.i(TAG, "Inisitalizing Record");
+                    startNewWalk();
+                    //createNewWalk("Around L1", "Lars the Boy");
+                }*/
+                if (recordWalkInitiated &&!walkingMode) {
+                    Log.i(TAG, "Starting recording");
+                    startRecordingWalk();
                 }
                 break;
-            case 2:Log.i(TAG, "Selected: Stop");
-                stopWalk();
-
+            case 1:
+                Log.i(TAG, "selected: Stop Recording");
+                stopRecordingWalk();
                 break;
-
+            case 2:
+                Log.i(TAG, "Start walk");
+                startWalk();
+                break;
+            case 3:
+                Log.i(TAG, "Stop walk");
+                stopWalk();
+                break;
         }
     }
+
+
+    public void showStartDialog() {
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        Fragment prev = getSupportFragmentManager().findFragmentByTag("dialog");
+        if (prev != null) {
+            ft.remove(prev);
+        }
+        ft.addToBackStack(null);
+        // Create and show the dialog.
+        DialogFragment newFragment = StartProgramDialog.newInstance(0);
+        newFragment.show(ft, "dialog");
+    }
+
+    public void startNewWalk() {
+        Log.i(TAG,"Spooky: ");
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        Fragment prev = getSupportFragmentManager().findFragmentByTag("newwalk");
+        if (prev != null) {
+            ft.remove(prev);
+        }
+        ft.addToBackStack(null);
+        // Create and show the dialog.
+        DialogFragment newFragment = CreateNewWalk.newInstance();
+        newFragment.show(ft, "newwalk");
+    }
+    public void setSoundTrackRef(String id){
+        Log.i(TAG,"ID: " + id);
+        soundTrackRef = myFirebaseRef.child(id);
+    }
+
+    public void startWalk(){
+        mMap.clear();
+        Log.i(TAG,"StartWalking"+walkingMode+isRecording);
+        drawSelectedWalk();
+        if(walkingMode) {
+            if (!isRecording) {
+                recorder = new Recorder(soundTrackRef.getKey());
+                recorder.startPlaying();
+            }
+        }
+    }
+
+    private void stopWalk() {
+        Log.i(TAG,"Stopwalking"+walkingMode+isRecording);
+        startedProgram = false;
+        mMap.clear();
+        recorder.stopPlaying();
+        showStartDialog();
+    }
+
 }

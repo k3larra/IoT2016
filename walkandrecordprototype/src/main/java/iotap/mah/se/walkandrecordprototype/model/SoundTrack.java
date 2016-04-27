@@ -1,18 +1,55 @@
 package iotap.mah.se.walkandrecordprototype.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.ArrayList;
+
 /**
  * Created by K3LARA on 2016-04-21.
  */
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class SoundTrack {
     private String name;
     private String author;
     private String rating;
     private String type;
     private String language;
+    private String id;
 
-    public SoundTrack(String name, String author,String languange) {
+    public SoundTrack() {
+    }
+
+    public SoundTrack(String name, String author) {
         this.name = name;
         this.author = author;
+    }
+
+    public SoundTrack(String name, String author,String language) {
+        this.name = name;
+        this.author = author;
+    }
+
+    public SoundTrack(String name, String author, String rating, String type) {
+        this.name = name;
+        this.author = author;
+        this.rating = rating;
+        this.type = type;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -45,5 +82,10 @@ public class SoundTrack {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return this.getName();
     }
 }

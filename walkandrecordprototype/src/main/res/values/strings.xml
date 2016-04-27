@@ -7,4 +7,8 @@
     <string name="cancel">Cancel</string>
     <string name="stop">Stop</string>
     <string name="replay">Replay</string>
+    <string name="str_cnt_mnu_edit">Edit</string>
+    <string name="str_cnt_mnu_share">Share</string>
+    <string name="str_cnt_mnu_delete">Delete</string>
+    <string name="startstopwalk">Start/Stop Walk</string>
 </resources>
