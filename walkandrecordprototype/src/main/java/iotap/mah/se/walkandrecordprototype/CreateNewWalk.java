@@ -35,11 +35,13 @@ public class CreateNewWalk extends DialogFragment {
         name = (EditText)v.findViewById(R.id.et_name);
         author = (EditText)v.findViewById(R.id.et_author);
         Button b = (Button)v.findViewById(R.id.button);
+        //Add a cancel button
         b.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //View v2 = getActivity().getLayoutInflater().inflate(R.layout.new_walk, null);
                 ((MapsActivity)getActivity()).createNewWalk(name.getText().toString(),author.getText().toString());
+                ((MapsActivity)getActivity()).creatingNewWalk =false;
                 CreateNewWalk.this.dismiss();
             }
         });

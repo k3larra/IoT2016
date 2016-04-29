@@ -3,5 +3,10 @@
     <string name="Palme">http://sverigesradio.se/topsy/ljudfil/5626744-mp3</string>
     <string name="Xanadu">http://sverigesradio.se/topsy/ljudfil/5667757-mp3</string>
     <string name="tobakshandlaren">https://sverigesradio.se/topsy/ljudfil/5655606-mp3</string>
+    <string name="Niagara1">https://drive.google.com/open?id=0B1eaCst0oIlFRktxSWNFYTc0NkU</string>
+    <string name="Niagara2">https://drive.google.com/file/d/0B1eaCst0oIlFRktxSWNFYTc0NkU/view?usp=sharing</string>
+    <string name="PalmeDrive">https://drive.google.com/open?id=0B1eaCst0oIlFQm15ZlMyVloxckU</string>
+    <string name="Niagara3">https://soundtrackmalmo.firebaseapp.com/-KGLuxJwL-4Hp4n-oFK8.3gp</string>
+    <string name="Niagara3godaddy">http://ixdk3.com/soundtrack/-KGLuxJwL-4Hp4n-oFK8.3gp</string>
     <string name="action_settings">Settings</string>
 </resources>

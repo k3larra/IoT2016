@@ -1,26 +1,30 @@
-package iotap.mah.se.audiotest;
+package iotap.mah.se.walkandrecordprototype.audio;
 
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
-import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import iotap.mah.se.walkandrecordprototype.Constants;
+import iotap.mah.se.walkandrecordprototype.MapsActivity;
 
 /**
  * Created by K3LARA on 2016-04-14.
  */
-public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnErrorListener {
-    private String streamingFile;
+public class StreamingPlayer implements MediaPlayer.OnPreparedListener, MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnSeekCompleteListener, MediaPlayer.OnErrorListener {
+    private String streamingFileFullAddr;
     private MediaPlayer mp;
-    private MainActivity mainActivity;
+    private MapsActivity mapsActivity;
     private Timer t, turnTester;
     private boolean prepared;
     private int millisEnd =0;
     private double degrees = 0.0;
+    private static final String TAG = "StreamingPlayer";
 
     //For stopping the sequence
     Handler handler = new Handler(){
@@ -138,22 +142,23 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
 
 
     private int mediaFileLengthInMilliseconds;
-    public MediaPlayerStreaming(String streamingFile, MainActivity c) {
-        this.streamingFile = streamingFile;
+    public StreamingPlayer(String streamingFile, MapsActivity c) {
+        this.streamingFileFullAddr = Constants.SOUND_FILE_ADRESS+ streamingFile+Constants.SOUND_FILE_EXTENSION;
+        //Log.i(TAG,"Addr: "+streamingFileFullAddr);
         this.mp = new MediaPlayer();
         mp.setOnPreparedListener(this);
         mp.setOnBufferingUpdateListener(this);
         mp.setOnCompletionListener(this);
         mp.setOnSeekCompleteListener(this);
         mp.setOnErrorListener(this);
-        mainActivity = c;
+        mapsActivity = c;
         try {
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mp.setDataSource(streamingFile);
+            mp.setDataSource(this.streamingFileFullAddr);
             mp.prepareAsync();
         } catch (Exception e) {
             e.printStackTrace();
-            c.setInfo(e.getMessage());
+            Toast.makeText(c, e.getMessage(),Toast.LENGTH_LONG).show();
         }
     }
 
@@ -162,7 +167,8 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
     public void onPrepared(MediaPlayer mp) {
         prepared = true;
         mediaFileLengthInMilliseconds = mp.getDuration();
-        mainActivity.setInfo("OK prepared player ready for takeoff!!!!"+mp.getDuration());
+        Toast.makeText(mapsActivity, "OK prepared player ready for takeoff!!!!",Toast.LENGTH_LONG).show();
+        playFrom(0);
     }
 
     public void playFrom(int millisStart){
@@ -253,7 +259,7 @@ public class MediaPlayerStreaming implements MediaPlayer.OnPreparedListener, Med
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        mainActivity.setInfo("Media Error");
+        Toast.makeText(mapsActivity, "Media error!",Toast.LENGTH_LONG).show();
         return false;
     }
 

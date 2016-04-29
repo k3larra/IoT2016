@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         toggleButtons.add((ToggleButton)findViewById(R.id.toggleButton7));
         toggleButtons.add((ToggleButton)findViewById(R.id.toggleButton8));
 
-        mediaPlayerStreaming = new MediaPlayerStreaming(getString(R.string.Palme),this);
+        mediaPlayerStreaming = new MediaPlayerStreaming(getString(R.string.Niagara3),this);
     }
 
     @Override

@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.Random;
 
 import iotap.mah.se.walkandrecordprototype.audio.Recorder;
+import iotap.mah.se.walkandrecordprototype.audio.StreamingPlayer;
 import iotap.mah.se.walkandrecordprototype.model.Point;
 import iotap.mah.se.walkandrecordprototype.model.SoundTrack;
 
@@ -70,15 +71,17 @@ public class MapsActivity extends FragmentActivity implements
     protected String mLastUpdateTime;
     private boolean recordWalkInitiated = false;
     private Recorder recorder;
+    private StreamingPlayer player;
     private boolean isRecording = false;
     public boolean walkingMode = true;  //If false recordingmode
     public boolean startedProgram = false;
-
+    public boolean creatingNewWalk = false;
     // Keys for storing activity state in the Bundle.
     protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
     protected final static String LOCATION_KEY = "location-key";
     protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
     private final static String WALK_INITIATED = "walkinitiated";
+
 
     //Activity stuff
     @Override
@@ -153,6 +156,9 @@ public class MapsActivity extends FragmentActivity implements
         if (isRecording) {
             recorder.stopRecording();
         }
+        if (player!=null) {
+            player.pause();
+        }
     }
 
    //Maps stuff
@@ -189,7 +195,11 @@ public class MapsActivity extends FragmentActivity implements
             @Override
             public void onMapLongClick(LatLng latLng) {
                 if (startedProgram) {
-                    new StartStop().show(getSupportFragmentManager(), "hepp");
+                    if (creatingNewWalk){
+                        startNewWalk();
+                    }else{
+                        new StartStop().show(getSupportFragmentManager(), "hepp");
+                    }
                 }else{
                     showStartDialog();
                 }
@@ -329,7 +339,7 @@ public class MapsActivity extends FragmentActivity implements
         SoundTrack soundTrack = new SoundTrack(name, author);
         soundTrackRef = myFirebaseRef.push();
         soundTrackRef.setValue(soundTrack);
-        recorder = new Recorder(soundTrackRef.getKey());
+        recorder = new Recorder(soundTrackRef.getKey(),this);
         recordWalkInitiated = true;
     }
 
@@ -355,13 +365,16 @@ public class MapsActivity extends FragmentActivity implements
 
     public void stopRecordingWalk(){
         Toast.makeText(this,"Saved walk",Toast.LENGTH_SHORT).show();
+        //Upload file
         if(!walkingMode) {
             if (recordWalkInitiated) {
                 mRequestingLocationUpdates = false;
                 stopLocationUpdates();
             }
             if (isRecording) {
+
                 recorder.stopRecording();
+                recorder.saveRecordingToCloud();
                 isRecording = false;
             }
             recordWalkInitiated =false;
@@ -437,8 +450,10 @@ public class MapsActivity extends FragmentActivity implements
         drawSelectedWalk();
         if(walkingMode) {
             if (!isRecording) {
-                recorder = new Recorder(soundTrackRef.getKey());
-                recorder.startPlaying();
+                //recorder = new Recorder(soundTrackRef.getKey());
+                //recorder.startPlaying();
+                //recorder.startStreaming();
+                player = new StreamingPlayer(soundTrackRef.getKey(),this);
             }
         }
     }
@@ -447,7 +462,8 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG,"Stopwalking"+walkingMode+isRecording);
         startedProgram = false;
         mMap.clear();
-        recorder.stopPlaying();
+        //recorder.stopPlaying();
+        player.trashPlayer();
         showStartDialog();
     }
 

@@ -72,6 +72,7 @@ public class StartProgramDialog extends DialogFragment {
             public void onClick(View v) {
                 ((MapsActivity)getActivity()).walkingMode = false;
                 ((MapsActivity)getActivity()).startedProgram = true;
+                ((MapsActivity)getActivity()).creatingNewWalk = true;
                 StartProgramDialog.this.dismiss();
                 ((MapsActivity)getActivity()).startNewWalk();
             }
