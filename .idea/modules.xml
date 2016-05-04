@@ -9,6 +9,7 @@
       <module fileurl="file://$PROJECT_DIR$/audio-3dlib/audio-3dlib.iml" filepath="$PROJECT_DIR$/audio-3dlib/audio-3dlib.iml" />
       <module fileurl="file://$PROJECT_DIR$/audio3dtest/audio3dtest.iml" filepath="$PROJECT_DIR$/audio3dtest/audio3dtest.iml" />
       <module fileurl="file://$PROJECT_DIR$/audiotest/audiotest.iml" filepath="$PROJECT_DIR$/audiotest/audiotest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/createkml/createkml.iml" filepath="$PROJECT_DIR$/createkml/createkml.iml" />
       <module fileurl="file://$PROJECT_DIR$/walkandrecordprototype/walkandrecordprototype.iml" filepath="$PROJECT_DIR$/walkandrecordprototype/walkandrecordprototype.iml" />
     </modules>
   </component>

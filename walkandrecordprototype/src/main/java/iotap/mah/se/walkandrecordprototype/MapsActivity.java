@@ -1,6 +1,5 @@
 package iotap.mah.se.walkandrecordprototype;
 
-import android.provider.SyncStateContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.graphics.Color;
@@ -26,7 +25,6 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -60,7 +58,7 @@ public class MapsActivity extends FragmentActivity implements
     //Firebase stuff
     public static Firebase myFirebaseRef; //ref for all SoundTracks
     public static Firebase soundTrackRef; //Ref for current track
-    private final static String SOUNDTRACKREF = "soundTrackRef";
+
     private final static int MAP_ZOOM = 18;
 
     //Implementation stuff
@@ -69,18 +67,22 @@ public class MapsActivity extends FragmentActivity implements
     public long millisInToRecording;
     Random r = new Random();
     protected String mLastUpdateTime;
-    private boolean recordWalkInitiated = false;
     private Recorder recorder;
     private StreamingPlayer player;
-    private boolean isRecording = false;
-    public boolean walkingMode = true;  //If false recordingmode
-    public boolean startedProgram = false;
-    public boolean creatingNewWalk = false;
+    
     // Keys for storing activity state in the Bundle.
-    protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
-    protected final static String LOCATION_KEY = "location-key";
-    protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
+    private final static String SOUNDTRACKREF = "soundTrackRef";
     private final static String WALK_INITIATED = "walkinitiated";
+    private boolean recordWalkInitiated = false;
+    private final static String IS_RECORDING = "isrecording";
+    private boolean isRecording = false;
+    private final static String WALKINGMODE = "walkingmode";
+    public boolean walkingMode = true;  //If false recordingmode
+    private final static String STARTED_PROGRAM = "startedprogram";
+    public boolean startedProgram = false;
+    private final static String CREATING_NEW_WALK = "creatingnewwalk";
+    public boolean creatingNewWalk = false;
+
 
 
     //Activity stuff
@@ -92,6 +94,10 @@ public class MapsActivity extends FragmentActivity implements
         if (savedInstanceState != null) {
             // Restore value of members from saved state
             recordWalkInitiated = savedInstanceState.getBoolean(WALK_INITIATED);
+            isRecording = savedInstanceState.getBoolean(IS_RECORDING);
+            walkingMode = savedInstanceState.getBoolean(WALKINGMODE);
+            startedProgram = savedInstanceState.getBoolean(STARTED_PROGRAM);
+            creatingNewWalk = savedInstanceState.getBoolean(CREATING_NEW_WALK);
             soundTrackRef = myFirebaseRef.child(savedInstanceState.getString(SOUNDTRACKREF));
         } else {
             // Probably initialize members with default values for a new instance
@@ -101,12 +107,8 @@ public class MapsActivity extends FragmentActivity implements
         if (!recordWalkInitiated &&!walkingMode) {
             createNewWalk("Around Universtitestholmen", "Lars the H");
         }*/
-
-
-
         //locRef = myFirebaseRef.child("demowalk");
         setContentView(R.layout.activity_maps);
-
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -119,12 +121,15 @@ public class MapsActivity extends FragmentActivity implements
         // API.
         buildGoogleApiClient();
         showStartDialog();
-        //new StartStop().show(getSupportFragmentManager(),"hepp");
     }
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(WALK_INITIATED, recordWalkInitiated);
+        savedInstanceState.putBoolean(IS_RECORDING, isRecording);
+        savedInstanceState.putBoolean(WALKINGMODE, walkingMode);
+        savedInstanceState.putBoolean(STARTED_PROGRAM, startedProgram);
+        savedInstanceState.putBoolean(CREATING_NEW_WALK, creatingNewWalk);
         savedInstanceState.putString(SOUNDTRACKREF,soundTrackRef.getKey());
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -446,7 +451,7 @@ public class MapsActivity extends FragmentActivity implements
 
     public void startWalk(){
         mMap.clear();
-        Log.i(TAG,"StartWalking"+walkingMode+isRecording);
+        Log.i(TAG,"StartWalking"+walkingMode+ isRecording);
         drawSelectedWalk();
         if(walkingMode) {
             if (!isRecording) {
@@ -459,7 +464,7 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     private void stopWalk() {
-        Log.i(TAG,"Stopwalking"+walkingMode+isRecording);
+        Log.i(TAG,"Stopwalking"+walkingMode+ isRecording);
         startedProgram = false;
         mMap.clear();
         //recorder.stopPlaying();
