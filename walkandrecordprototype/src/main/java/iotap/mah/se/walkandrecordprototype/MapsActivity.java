@@ -30,7 +30,6 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
 
@@ -63,12 +62,13 @@ public class MapsActivity extends FragmentActivity implements
 
     //Implementation stuff
     protected static final String TAG = "MapsActivity";
-    private ArrayList<Point> points = new ArrayList<Point>();
+   // private ArrayList<Point> points = new ArrayList<Point>();
     public long millisInToRecording;
     Random r = new Random();
     protected String mLastUpdateTime;
     private Recorder recorder;
     private StreamingPlayer player;
+    protected SoundTrack activeTrack;
     
     // Keys for storing activity state in the Bundle.
     private final static String SOUNDTRACKREF = "soundTrackRef";
@@ -132,6 +132,7 @@ public class MapsActivity extends FragmentActivity implements
         savedInstanceState.putBoolean(CREATING_NEW_WALK, creatingNewWalk);
         savedInstanceState.putString(SOUNDTRACKREF,soundTrackRef.getKey());
         super.onSaveInstanceState(savedInstanceState);
+        //restore active walk here!!!!!
     }
 
     @Override
@@ -201,7 +202,7 @@ public class MapsActivity extends FragmentActivity implements
             public void onMapLongClick(LatLng latLng) {
                 if (startedProgram) {
                     if (creatingNewWalk){
-                        startNewWalk();
+                        startRecordingNewWalk();
                     }else{
                         new StartStop().show(getSupportFragmentManager(), "hepp");
                     }
@@ -235,20 +236,7 @@ public class MapsActivity extends FragmentActivity implements
         Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + connectionResult.getErrorCode());
     }
 
-        //Location update stuff
-    /**
-         * Sets up the location request. Android has two location request settings:
-         * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
-         * the accuracy of the current location. This sample uses ACCESS_FINE_LOCATION, as defined in
-         * the AndroidManifest.xml.
-         * <p/>
-         * When the ACCESS_FINE_LOCATION setting is specified, combined with a fast update
-         * interval (5 seconds), the Fused Location Provider API returns location updates that are
-         * accurate to within a few feet.
-         * <p/>
-         * These settings are appropriate for mapping applications that show real-time location
-         * updates.
-         */
+
     protected void createLocationRequest() {
             mLocationRequest = new LocationRequest();
 
@@ -271,7 +259,6 @@ public class MapsActivity extends FragmentActivity implements
         //mark location:
         //
         if(isRecording) {
-
             MarkerOptions marker = new MarkerOptions()
                     .position(current)
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.here_marker))
@@ -280,16 +267,69 @@ public class MapsActivity extends FragmentActivity implements
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, MAP_ZOOM));
             //
             mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
-            Log.i(TAG, "At: lat: " + mCurrentLocation.getLatitude() + " long " + mCurrentLocation.getLongitude());
-            Log.i(TAG, "At: time: " + mCurrentLocation.getTime() + " \n\tAccuracy: " + mCurrentLocation.getAccuracy()+" \n\tSpeed: " + mCurrentLocation.getSpeed());
+            //Log.i(TAG, "At: lat: " + mCurrentLocation.getLatitude() + " long " + mCurrentLocation.getLongitude());
+            //Log.i(TAG, "At: time: " + mCurrentLocation.getTime() + " \n\tAccuracy: " + mCurrentLocation.getAccuracy()+" \n\tSpeed: " + mCurrentLocation.getSpeed());
             int time = (int) (System.currentTimeMillis() - millisInToRecording);
-            //mCurrentLocation.getTime();   //Bättre
-            //mCurrentLocation.getAccuracy(); //I meter 68% säkerhet att man är där 0.0 om man inte vet
-            //mCurrentLocation.getSpeed();
             Point point = new Point(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude(), time, mCurrentLocation.getAccuracy(),mCurrentLocation.getSpeed());
             soundTrackRef.child("SoundTrack").push().setValue(point);
         }else{
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, MAP_ZOOM));
+        }
+        if(walkingMode) {
+            Log.i(TAG,"-------NEW_POSITION-------");
+            Log.i(TAG, "Arrived at point: lat: " + mCurrentLocation.getLatitude() + " long " + mCurrentLocation.getLongitude());
+            if(activeTrack!=null) {
+                if (activeTrack.hasWalkStarted()) {
+                    Log.i(TAG, "Next point is nbr: " + activeTrack.getTheActivePointIndex() + " at lat: " + activeTrack.getCurrentPoint().getLatitude() + " long " + activeTrack.getCurrentPoint().getLongitude());
+                    Log.i(TAG, "Distance to next point: " + (float) Math.round(location.distanceTo(activeTrack.getCurrentPoint().getLocation())) * 100f / 100 + "m away");
+                }
+                //3mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, MAP_ZOOM));
+                //points.
+                //Check if walk should start and if true actitate it
+                if (location.distanceTo(activeTrack.getFirstPoint().getLocation()) < Constants.whatIsClose) {
+                    if (!activeTrack.hasWalkStarted() && !activeTrack.hasWalkEnded()) {
+                        //Ok start the walk
+                        activeTrack.setNextPointActive();
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(activeTrack.getCurrentPoint().getLatLng(), MAP_ZOOM));
+                        //Play next part
+                        Log.i(TAG, "Walk initiated");
+                        Log.i(TAG, "**Playing from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to " + activeTrack.getNextPoint().getMillisIntoSound() + " with duration " + Math.round((activeTrack.getNextPoint().getMillisIntoSound() - activeTrack.getCurrentPoint().getMillisIntoSound()) * 100) / 100000f);
+                        player.playFromTo(activeTrack.getCurrentPoint().getMillisIntoSound(), activeTrack.getNextPoint().getMillisIntoSound());
+                    }
+
+                }
+                if (activeTrack.hasWalkStarted()) {
+                    Log.i(TAG, "Ongoing walk");
+
+                }
+
+                if (activeTrack.hasWalkStarted()) {
+                    if (location.distanceTo(activeTrack.getNextPoint().getLocation()) < Constants.whatIsClose) {
+                        if (activeTrack.hasWalkStarted() && !activeTrack.hasWalkEnded()) {
+                            //Ok next point reached
+                            activeTrack.setNextPointActive();
+                            Log.i(TAG, "The next point reached, move over to point: " + activeTrack.getTheActivePointIndex());
+                            Log.i(TAG, "New point to reach at index: " + activeTrack.getTheActivePointIndex() + " distance " + (float) Math.round(location.distanceTo(activeTrack.getCurrentPoint().getLocation())) * 100f / 100 + " meters at lat: " + activeTrack.getCurrentPoint().getLatitude() + " long " + activeTrack.getCurrentPoint().getLongitude());
+                            //Move Camera in position
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(activeTrack.getCurrentPoint().getLatLng(), MAP_ZOOM));
+                            //Play next part
+
+                            if (!activeTrack.hasWalkEnded()) {
+                                Log.i(TAG, "**Playing from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to " + activeTrack.getNextPoint().getMillisIntoSound() + " with duration " + Math.round((activeTrack.getNextPoint().getMillisIntoSound() - activeTrack.getCurrentPoint().getMillisIntoSound()) * 100) / 100000f);
+                                player.playFromTo(activeTrack.getCurrentPoint().getMillisIntoSound(), activeTrack.getNextPoint().getMillisIntoSound());
+                            } else { //On the last point
+                                Log.i(TAG, "**Playing from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to the end");
+                                player.playFrom(activeTrack.getCurrentPoint().getMillisIntoSound());
+                            }
+                        }
+
+                    }
+                }
+                if (activeTrack.hasWalkEnded()) {
+                    Log.i(TAG, "Walk really ended");
+                }
+                Log.i(TAG, "-------END_POSITION_UPDATE-------");
+            }
         }
 
     }
@@ -299,12 +339,6 @@ public class MapsActivity extends FragmentActivity implements
     }
 
     protected void stopLocationUpdates() {
-        // It is a good practice to remove location requests when the activity is in a paused or
-        // stopped state. Doing so helps battery performance and is especially
-        // recommended in applications that request frequent location updates.
-
-        // The final argument to {@code requestLocationUpdates()} is a LocationListener
-        // (http://developer.android.com/reference/com/google/android/gms/location/LocationListener.html).
         LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
     }
 
@@ -315,21 +349,25 @@ public class MapsActivity extends FragmentActivity implements
             soundTrackRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-                    points.clear();
+                    activeTrack.getPoints().clear();
                     Log.i(TAG,dataSnapshot.child("author").getValue().toString());
                     Log.i(TAG,"Antal"+dataSnapshot.child("SoundTrack").getChildrenCount());
                     for (DataSnapshot postSnapshot: dataSnapshot.child("SoundTrack").getChildren()) {
                         Point point = postSnapshot.getValue(Point.class);
-                        points.add(point);
+                        activeTrack.getPoints().add(point);
                     }
-
-                    for (int i = 1,j = 0; i<points.size();i++,j++) {
-                        Log.i(TAG,"point: "+points.get(j).getLatitude());
+                    //activeTrack.setPoints(points);
+                    for (int i = 1,j = 0; i<activeTrack.getPoints().size();i++,j++) {
                         Polyline line = mMap.addPolyline(new PolylineOptions()
-                                .add(new LatLng(points.get(j).getLatitude(),points.get(j).getLongitude()),
-                                        new LatLng(points.get(i).getLatitude(), points.get(i).getLongitude()))
+                                .add(new LatLng(activeTrack.getPoints().get(j).getLatitude(),activeTrack.getPoints().get(j).getLongitude()),
+                                        new LatLng(activeTrack.getPoints().get(i).getLatitude(), activeTrack.getPoints().get(i).getLongitude()))
                                 .width(5)
                                 .color(Color.GREEN));
+                    }
+
+                    for (int i =0; i<activeTrack.getPoints().size();i++) {
+                        Point p = activeTrack.getPoints().get(i);
+                        Log.i(TAG,"Point nbr: "+i+ " lat: "+ p.getLatitude()+" long: "+p.getLongitude());
                     }
                 }
 
@@ -396,7 +434,7 @@ public class MapsActivity extends FragmentActivity implements
                 Log.i(TAG, "Selected: Record");
                 /*if (!recordWalkInitiated &&!walkingMode) {
                     Log.i(TAG, "Inisitalizing Record");
-                    startNewWalk();
+                    startRecordingNewWalk();
                     //createNewWalk("Around L1", "Lars the Boy");
                 }*/
                 if (recordWalkInitiated &&!walkingMode) {
@@ -432,7 +470,7 @@ public class MapsActivity extends FragmentActivity implements
         newFragment.show(ft, "dialog");
     }
 
-    public void startNewWalk() {
+    public void startRecordingNewWalk() {
         Log.i(TAG,"Spooky: ");
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         Fragment prev = getSupportFragmentManager().findFragmentByTag("newwalk");
@@ -453,6 +491,7 @@ public class MapsActivity extends FragmentActivity implements
         mMap.clear();
         Log.i(TAG,"StartWalking"+walkingMode+ isRecording);
         drawSelectedWalk();
+
         if(walkingMode) {
             if (!isRecording) {
                 //recorder = new Recorder(soundTrackRef.getKey());
@@ -468,7 +507,10 @@ public class MapsActivity extends FragmentActivity implements
         startedProgram = false;
         mMap.clear();
         //recorder.stopPlaying();
-        player.trashPlayer();
+        if(player!=null){
+            player.trashPlayer();
+        }
+
         showStartDialog();
     }
 

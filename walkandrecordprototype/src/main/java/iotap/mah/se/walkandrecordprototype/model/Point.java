@@ -1,6 +1,11 @@
 package iotap.mah.se.walkandrecordprototype.model;
 
+import android.location.Location;
+import android.location.LocationManager;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.nearby.sharing.LocalContent;
 
 /**
  * Created by K3LARA on 2016-04-20.
@@ -13,6 +18,7 @@ public class Point {
     private int millisIntoSound;
     private float accuracy;
     private float speed;
+
 
     public Point() {
     }
@@ -71,4 +77,17 @@ public class Point {
     public void setSpeed(float speed) {
         this.speed = speed;
     }
+
+    public Location getLocation() {
+        Location l = new Location("");
+        l.setLongitude(this.longitude);
+        l.setLatitude(this.latitude);
+        return l;
+    }
+
+    public LatLng getLatLng() {
+
+        return new LatLng(this.latitude, this.longitude);
+    }
+
 }

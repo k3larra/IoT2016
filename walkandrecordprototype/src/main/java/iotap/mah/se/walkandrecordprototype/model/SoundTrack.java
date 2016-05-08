@@ -15,6 +15,11 @@ public class SoundTrack {
     private String type;
     private String language;
     private String id;
+    private ArrayList<Point> points = new ArrayList<Point>();
+    //
+    private int activepoint=-1;
+    private boolean hasWalkStarted=false;
+    private boolean hasWalkEnded=false;
 
     public SoundTrack() {
     }
@@ -87,5 +92,91 @@ public class SoundTrack {
     @Override
     public String toString() {
         return this.getName();
+    }
+
+    public ArrayList<Point> getPoints() {
+        return points;
+    }
+
+    public void setPoints(ArrayList<Point> points) {
+        this.points = points;
+    }
+
+    public Point getFirstPoint() {
+        if (points != null) {
+            return points.get(0);
+        } else {
+            return null;
+        }
+    }
+
+    public Point getNextPoint() {
+        if ((activepoint+1)<points.size()){
+            return points.get(activepoint+1);
+        }if (activepoint==-1){
+            return points.get(0);
+        }else{
+            return null;
+        }
+    }
+
+    public Point setNextPointActive() {
+        if ((activepoint+1)<points.size()) {
+            hasWalkStarted = true;
+            activepoint = activepoint + 1;
+            return points.get(activepoint);
+        }else if(((activepoint+1)==points.size())){
+            hasWalkEnded=true;
+            return null;
+        }else{
+            return null;
+        }
+    }
+
+    public boolean hasWalkStarted(){
+        return this.hasWalkStarted;
+    }
+
+    public boolean hasWalkEnded(){
+        return this.hasWalkEnded;
+    }
+
+    public Point getCurrentPoint() {
+        if (points != null&&activepoint!=-1) {
+                return points.get(activepoint);
+        } else {
+            return null;
+        }
+    }
+
+    public Point getPrevoiusPoint() {
+        if (points != null) {
+            if ((activepoint)>0) {
+                return points.get(activepoint - 1);
+            }
+            return points.get(activepoint-1);
+        } else {
+            return null;
+        }
+    }
+
+    public boolean isLastPoint(){
+        if ((activepoint+1)==points.size()) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public boolean isTheFirstPoint(){
+        if (activepoint==0) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public int getTheActivePointIndex(){
+        return activepoint;
     }
 }

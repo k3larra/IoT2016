@@ -168,7 +168,7 @@ public class StreamingPlayer implements MediaPlayer.OnPreparedListener, MediaPla
         prepared = true;
         mediaFileLengthInMilliseconds = mp.getDuration();
         Toast.makeText(mapsActivity, "OK prepared player ready for takeoff!!!!",Toast.LENGTH_LONG).show();
-        playFrom(0);
+        //playFrom(0);
     }
 
     public void playFrom(int millisStart){

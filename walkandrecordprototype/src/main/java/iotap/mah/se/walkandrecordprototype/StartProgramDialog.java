@@ -60,6 +60,7 @@ public class StartProgramDialog extends DialogFragment {
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 ((MapsActivity)getActivity()).setSoundTrackRef(s.getId());
+                ((MapsActivity)getActivity()).activeTrack = s;
                 ((MapsActivity)getActivity()).walkingMode = true;
                 ((MapsActivity)getActivity()).startedProgram = true;
                 ((MapsActivity)getActivity()).startWalk();
@@ -74,7 +75,8 @@ public class StartProgramDialog extends DialogFragment {
                 ((MapsActivity)getActivity()).startedProgram = true;
                 ((MapsActivity)getActivity()).creatingNewWalk = true;
                 StartProgramDialog.this.dismiss();
-                ((MapsActivity)getActivity()).startNewWalk();
+                ((MapsActivity)getActivity()).startRecordingNewWalk();
+
             }
         });
         Log.i(TAG,"Number tracks  : "+ soundTracks.size());
