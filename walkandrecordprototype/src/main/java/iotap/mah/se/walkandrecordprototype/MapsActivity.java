@@ -314,11 +314,11 @@ public class MapsActivity extends FragmentActivity implements
                             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(activeTrack.getCurrentPoint().getLatLng(), MAP_ZOOM));
                             //Play next part
 
-                            if (!activeTrack.hasWalkEnded()) {
-                                Log.i(TAG, "**Playing from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to " + activeTrack.getNextPoint().getMillisIntoSound() + " with duration " + Math.round((activeTrack.getNextPoint().getMillisIntoSound() - activeTrack.getCurrentPoint().getMillisIntoSound()) * 100) / 100000f);
+                            if (!activeTrack.isLastPoint()) {
+                                Log.i(TAG, "**Playing " +activeTrack.getTheActivePointIndex()+ " from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to " + activeTrack.getNextPoint().getMillisIntoSound() + " with duration " + Math.round((activeTrack.getNextPoint().getMillisIntoSound() - activeTrack.getCurrentPoint().getMillisIntoSound()) * 100) / 100000f);
                                 player.playFromTo(activeTrack.getCurrentPoint().getMillisIntoSound(), activeTrack.getNextPoint().getMillisIntoSound());
                             } else { //On the last point
-                                Log.i(TAG, "**Playing from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to the end");
+                                Log.i(TAG, "**Playing " +activeTrack.getTheActivePointIndex()+"+ from: " + activeTrack.getCurrentPoint().getMillisIntoSound() + " to the end");
                                 player.playFrom(activeTrack.getCurrentPoint().getMillisIntoSound());
                             }
                         }
@@ -327,6 +327,7 @@ public class MapsActivity extends FragmentActivity implements
                 }
                 if (activeTrack.hasWalkEnded()) {
                     Log.i(TAG, "Walk really ended");
+                    player.trashPlayer();
                 }
                 Log.i(TAG, "-------END_POSITION_UPDATE-------");
             }
@@ -357,14 +358,9 @@ public class MapsActivity extends FragmentActivity implements
                         activeTrack.getPoints().add(point);
                     }
                     //activeTrack.setPoints(points);
-                    for (int i = 1,j = 0; i<activeTrack.getPoints().size();i++,j++) {
-                        Polyline line = mMap.addPolyline(new PolylineOptions()
-                                .add(new LatLng(activeTrack.getPoints().get(j).getLatitude(),activeTrack.getPoints().get(j).getLongitude()),
-                                        new LatLng(activeTrack.getPoints().get(i).getLatitude(), activeTrack.getPoints().get(i).getLongitude()))
-                                .width(5)
-                                .color(Color.GREEN));
-                    }
+                    drawTrack();
 
+                    //Logging
                     for (int i =0; i<activeTrack.getPoints().size();i++) {
                         Point p = activeTrack.getPoints().get(i);
                         Log.i(TAG,"Point nbr: "+i+ " lat: "+ p.getLatitude()+" long: "+p.getLongitude());
@@ -512,6 +508,18 @@ public class MapsActivity extends FragmentActivity implements
         }
 
         showStartDialog();
+    }
+
+    public void drawTrack(){
+        if (activeTrack!=null) {
+            for (int i = 1, j = 0; i < activeTrack.getPoints().size(); i++, j++) {
+                Polyline line = mMap.addPolyline(new PolylineOptions()
+                        .add(new LatLng(activeTrack.getPoints().get(j).getLatitude(), activeTrack.getPoints().get(j).getLongitude()),
+                                new LatLng(activeTrack.getPoints().get(i).getLatitude(), activeTrack.getPoints().get(i).getLongitude()))
+                        .width(5)
+                        .color(getResources().getColor(R.color.colorColorPlaying)));
+            }
+        }
     }
 
 }

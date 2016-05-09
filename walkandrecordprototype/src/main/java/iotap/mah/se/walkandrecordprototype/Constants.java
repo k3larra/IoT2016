@@ -9,5 +9,4 @@ public class Constants {
  public static final String SOUND_FILE_ADRESS = "http://ixdk3.com/soundtrack/";
  public static final String SOUND_FILE_EXTENSION = ".3gp";
  public static int whatIsClose=10;
-
 }
